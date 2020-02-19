@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "rtc_io.h": "c",
+        "gpio.h": "c",
+        "ulp.h": "c"
+    }
+}
