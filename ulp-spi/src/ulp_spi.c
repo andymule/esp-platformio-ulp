@@ -38,6 +38,7 @@ extern const uint8_t ulp_main_bin_end[]   asm("_binary_ulp_main_bin_end");
 // const gpio_num_t GPIO_BUSY = GPIO_NUM_4;    //RTC10 
 
 // for to test w bus pirate
+//worked on arduino gpio: SCLK = 2, MISO = 12, MOSI = 26, SS = 4, 
 const gpio_num_t GPIO_MOSI = GPIO_NUM_26;  
 const gpio_num_t GPIO_SCLK = GPIO_NUM_2;  
 const gpio_num_t GPIO_CS = GPIO_NUM_4;    
