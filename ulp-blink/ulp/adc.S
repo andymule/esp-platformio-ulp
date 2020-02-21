@@ -33,14 +33,14 @@
 #include "soc/rtc_i2c_reg.h"
 
 .global entry                // ulp start address used by main core program
-.set gpio_26, 7              // gpio pin 2 is rtc pin 7 
+.set gpio_26, 7              // gpio pin 26 is rtc pin 7 
 .text
 
 entry:
-  // might be needed for some pads, but surely not #2
+  // might be needed for some pads, but surely not #2 //idk wat this is andymule
   ;  WRITE_RTC_REG(RTC_IO_TOUCH_PAD2_REG, RTC_IO_TOUCH_PAD2_TO_GPIO_S, 1, 1)
 
-  // use digital function, not rtc function
+  // use digital function, not rtc function //idk wat this is andymule
   ; WRITE_RTC_REG(RTC_IO_TOUCH_PAD2_REG, RTC_IO_TOUCH_PAD2_MUX_SEL_S, 1, 1)
 
   // gpio_26 shall be output, not input
