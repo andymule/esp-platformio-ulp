@@ -17,6 +17,7 @@
 #include "soc/rtc_cntl_reg.h"
 #include "soc/rtc_io_reg.h"
 #include "soc/soc_ulp.h"
+#include "soc/sens_reg.h"
 #include "stack.S"
 
 
@@ -37,13 +38,37 @@
 	.set SPI_MODE_SET,	SPI_MODE_1
 	.set SPI_TYPE_SET,	SPI_MASTER
 
-	.set MISO, 
+	.set pMOSI, 7
+	.set pSCLK, 12
+	.set pCS, 10
+	.set pMISO, 15
+	.set pDC, 4
+	.set pRST, 16
+	.set pBUSY, 13
+
+/*
+; // for to test w bus pirate				   	//exposed GPIO w RTC:
+; const gpio_num_t GPIO_MOSI = GPIO_NUM_0; 	// 0->11
+; const gpio_num_t GPIO_SCLK = GPIO_NUM_2; 	// 2->12
+; const gpio_num_t GPIO_CS = GPIO_NUM_4;   	// 4->10
+; const gpio_num_t GPIO_MISO = GPIO_NUM_12;	// 12->15
+; const gpio_num_t GPIO_DC = GPIO_NUM_13;  	// 13->4
+; const gpio_num_t GPIO_RST = GPIO_NUM_14; 	// 14->16
+; const gpio_num_t GPIO_BUSY = GPIO_NUM_15;	// 15->13
 
 ; .macro read_SCL // Return current level of SCL line, 0 or 1
 ; READ_RTC_REG(RTC_GPIO_IN_REG, RTC_GPIO_IN_NEXT_S + 9, 1) // RTC_GPIO_9 == GPIO_32
 ; .endm
+*/
 
+/* Define variables, which go into .bss section (zero-initialized data) */
 .bss
+.global stack
+stack:
+	.skip 100
+	.global stackEnd
+stackEnd:
+	.long 0
 	.global spi_mode
 spi_mode:
 	.long	0
@@ -56,30 +81,61 @@ spi_mode:
 .endm
 
 .macro read_MISO 
-	READ_RTC_REG(RTC_GPIO_IN_REG, RTC_GPIO_IN_NEXT_S + 10, 1) 
+	READ_RTC_REG(RTC_GPIO_IN_REG, RTC_GPIO_IN_NEXT_S + pMISO, 1) 
 .endm
 
 .macro clear_SCLK
-	WRITE_RTC_REG(RTC_GPIO_OUT_W1TC_REG, RTC_GPIO_OUT_DATA_W1TC_S + 17, 1, 1)
+	WRITE_RTC_REG(RTC_GPIO_OUT_W1TC_REG, RTC_GPIO_OUT_DATA_W1TC_S + pSCLK, 1, 1)
 .endm
 .macro set_SCLK
-	WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG, RTC_GPIO_OUT_DATA_W1TS_S + 17, 1, 1)
+	WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG, RTC_GPIO_OUT_DATA_W1TS_S + pSCLK, 1, 1)
 .endm
 
 .macro clear_MOSI
-	WRITE_RTC_REG(RTC_GPIO_OUT_W1TC_REG, RTC_GPIO_OUT_DATA_W1TC_S + 7, 1, 1)
+	WRITE_RTC_REG(RTC_GPIO_OUT_W1TC_REG, RTC_GPIO_OUT_DATA_W1TC_S + pMOSI, 1, 1)
 .endm
 .macro set_MOSI
-	WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG, RTC_GPIO_OUT_DATA_W1TS_S + 7, 1, 1)
+	WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG, RTC_GPIO_OUT_DATA_W1TS_S + pMOSI, 1, 1)
 .endm
 
 .macro clear_CS 
-	WRITE_RTC_REG(RTC_GPIO_OUT_W1TC_REG, RTC_GPIO_OUT_DATA_W1TC_S + 6, 1, 1)
+	WRITE_RTC_REG(RTC_GPIO_OUT_W1TC_REG, RTC_GPIO_OUT_DATA_W1TC_S + pCS, 1, 1)
 .endm
 .macro set_CS 
-	WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG, RTC_GPIO_OUT_DATA_W1TS_S + 6, 1, 1)
+	WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG, RTC_GPIO_OUT_DATA_W1TS_S + pCS, 1, 1)
 .endm
 
+
+	.global entry
+entry:
+	move r3, stackEnd
+	psr
+	//; jump init_param
+	//; psr
+	//; jump MS5611_Init
+	//; psr
+	//; jump MS5611_Read_PROM
+	//; psr
+	//; jump MS5611_Convert_D1
+	//; psr
+	//; jump MS5611_Convert_D2
+	jump wake_up
+	///* Get ULP back to sleep */
+	.global exit
+exit:
+	halt
+	.global wake_up
+wake_up:
+	/* Check if the SoC can be woken up */
+	READ_RTC_REG(RTC_CNTL_DIAG0_REG, 19, 1)
+	and r0, r0, 1
+	jump exit, eq
+	//jump wake_up, eq
+	/* Wake up the SoC and stop ULP program */
+	wake
+	/* Stop the wakeup timer so it does not restart ULP */
+	WRITE_RTC_FIELD(RTC_CNTL_STATE0_REG, RTC_CNTL_ULP_CP_SLP_TIMER_EN, 0)
+	halt
 
 	.global SPI_Init
 SPI_Init:
@@ -96,7 +152,7 @@ SPI_Init:
 	jump error_loop 
 gpio_init1:
 	clear_MOSI
-	clear_SCLK					/* */
+	clear_SCLK
 	ret
 gpio_init2:
 	clear_MOSI
@@ -299,6 +355,7 @@ read_loop4:
 	jump spi_read_byte_end
 spi_read_byte_end:
 	ret
+
 
 error_loop:
 	ret
