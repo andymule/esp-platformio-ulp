@@ -6,8 +6,8 @@
         {
             "name": "Win32",
             "includePath": [
-                "c:/Source/ulp-spi/include",
-                "c:/Source/ulp-spi/src",
+                "c:/Source/esp-platformio-ulp/ulp-spi/include",
+                "c:/Source/esp-platformio-ulp/ulp-spi/src",
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/bt/bluedroid/stack/smp/include",
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/bt/bluedroid/stack/sdp/include",
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/bt/bluedroid/stack/rfcomm/include",
@@ -123,15 +123,14 @@
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/wpa_supplicant/include",
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/wpa_supplicant/port/include",
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/xtensa-debug-module/include",
-                "c:/Source/ulp-spi/.pio/build/esp32 dev/ulp_app",
                 "C:/Users/xxsha/.platformio/packages/tool-unity",
                 ""
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "c:/Source/ulp-spi/include",
-                    "c:/Source/ulp-spi/src",
+                    "c:/Source/esp-platformio-ulp/ulp-spi/include",
+                    "c:/Source/esp-platformio-ulp/ulp-spi/src",
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/bt/bluedroid/stack/smp/include",
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/bt/bluedroid/stack/sdp/include",
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/bt/bluedroid/stack/rfcomm/include",
@@ -247,7 +246,6 @@
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/wpa_supplicant/include",
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/wpa_supplicant/port/include",
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/xtensa-debug-module/include",
-                    "c:/Source/ulp-spi/.pio/build/esp32 dev/ulp_app",
                     "C:/Users/xxsha/.platformio/packages/tool-unity",
                     ""
                 ]

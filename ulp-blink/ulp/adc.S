@@ -33,7 +33,7 @@
 #include "soc/rtc_i2c_reg.h"
 
 .global entry                // ulp start address used by main core program
-.set gpio_2, 7              // gpio pin 2 is rtc pin 12 //.set gpio_2, 12  
+.set gpio_26, 7              // gpio pin 2 is rtc pin 7 
 .text
 
 entry:
@@ -43,18 +43,18 @@ entry:
   // use digital function, not rtc function
   ; WRITE_RTC_REG(RTC_IO_TOUCH_PAD2_REG, RTC_IO_TOUCH_PAD2_MUX_SEL_S, 1, 1)
 
-  // gpio_2 shall be output, not input
-  WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + gpio_2, 1, 1)
+  // gpio_26 shall be output, not input
+  WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + gpio_26, 1, 1)
 
 on:
-  WRITE_RTC_REG(RTC_GPIO_ENABLE_W1TS_REG, RTC_GPIO_ENABLE_W1TS_S + gpio_2, 1, 1)
+  WRITE_RTC_REG(RTC_GPIO_ENABLE_W1TS_REG, RTC_GPIO_ENABLE_W1TS_S + gpio_26, 1, 1)
 
   move  r1, 1000           // wait in ms
   move  r2, off           // return address
   jump  delay             // call subroutine
 
 off:
-  WRITE_RTC_REG(RTC_GPIO_ENABLE_W1TC_REG, RTC_GPIO_ENABLE_W1TC_S + gpio_2, 1, 1)
+  WRITE_RTC_REG(RTC_GPIO_ENABLE_W1TC_REG, RTC_GPIO_ENABLE_W1TC_S + gpio_26, 1, 1)
 
   move  r1, 1000           // wait in ms
   move  r2, on            // return address

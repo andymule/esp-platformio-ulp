@@ -37,6 +37,12 @@
 	.set SPI_MODE_SET,	SPI_MODE_1
 	.set SPI_TYPE_SET,	SPI_MASTER
 
+	.set MISO, 
+
+; .macro read_SCL // Return current level of SCL line, 0 or 1
+; READ_RTC_REG(RTC_GPIO_IN_REG, RTC_GPIO_IN_NEXT_S + 9, 1) // RTC_GPIO_9 == GPIO_32
+; .endm
+
 .bss
 	.global spi_mode
 spi_mode:

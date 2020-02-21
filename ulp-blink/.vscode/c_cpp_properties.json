@@ -6,8 +6,8 @@
         {
             "name": "Win32",
             "includePath": [
-                "c:/Source/ulp-blink/include",
-                "c:/Source/ulp-blink/src",
+                "c:/Source/esp-platformio-ulp/ulp-blink/include",
+                "c:/Source/esp-platformio-ulp/ulp-blink/src",
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/bt/bluedroid/stack/smp/include",
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/bt/bluedroid/stack/sdp/include",
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/bt/bluedroid/stack/rfcomm/include",
@@ -129,8 +129,8 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "c:/Source/ulp-blink/include",
-                    "c:/Source/ulp-blink/src",
+                    "c:/Source/esp-platformio-ulp/ulp-blink/include",
+                    "c:/Source/esp-platformio-ulp/ulp-blink/src",
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/bt/bluedroid/stack/smp/include",
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/bt/bluedroid/stack/sdp/include",
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/bt/bluedroid/stack/rfcomm/include",
