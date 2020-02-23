@@ -1,18 +1,3 @@
-/* ULP Example: Read temperautre in deep sleep
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-
-   This file contains assembly code which runs on the ULP.
-
-*/
-
-/* ULP assembly files are passed through C preprocessor first, so include directives
-   and C macros may be used in these files 
- */
 
 #include "soc/rtc_cntl_reg.h"
 #include "soc/rtc_io_reg.h"
@@ -20,6 +5,48 @@
 #include "soc/sens_reg.h"
 #include "stack.S"
 
+    // these are from temp exmaple, need to replace with my own from python
+	.set	MS5611_ADDR,             0x77 // MS5611
+	.set	CMD_RESET,               0xFF // ADC reset command
+	.set	CMD_ADC_READ,            0x00 // ADC read command
+	.set	CMD_ADC_D1_256,          0x40 // ADC OSR=256
+	.set	CMD_ADC_D1_512,          0x42 // ADC OSR=512
+	.set	CMD_ADC_D1_1024,         0x44 // ADC OSR=1024
+	.set	CMD_ADC_D1_2048,         0x46 // ADC OSR=2048
+	.set	CMD_ADC_D1_4096,         0x48 // ADC OSR=4096
+	.set	CMD_ADC_D2_256,          0x50 // ADC OSR=256
+	.set	CMD_ADC_D2_512,          0x52 // ADC OSR=512
+	.set	CMD_ADC_D2_1024,         0x54 // ADC OSR=1024
+	.set	CMD_ADC_D2_2048,         0x56 // ADC OSR=2048
+	.set	CMD_ADC_D2_4096,         0x58 // ADC OSR=4096
+	.set	CMD_PROM_RD,             0xA0 // Prom read command
+	.set	PROM_NB,                 0x08 // PROM lenth
+
+	.set EPD_WIDTH, 128
+	.set EPD_HEIGHT, 296
+
+	// Display commands
+	.set  DRIVER_OUTPUT_CONTROL, 0x01
+	.set  BOOSTER_SOFT_START_CONTROL, 0x0C
+	// GATE_SCAN_START_POSITION            , 0x0F
+	.set  DEEP_SLEEP_MODE, 0x10
+	.set  DATA_ENTRY_MODE_SETTING, 0x11
+	// SW_RESET                            , 0x12
+	// TEMPERATURE_SENSOR_CONTROL          , 0x1A
+	.set  MASTER_ACTIVATION, 0x20
+	// DISPLAY_UPDATE_CONTROL_1            , 0x21
+	.set  DISPLAY_UPDATE_CONTROL_2, 0x22
+	.set  WRITE_RAM, 0x24
+	.set  WRITE_VCOM_REGISTER, 0x2C
+	.set  WRITE_LUT_REGISTER, 0x32
+	.set  SET_DUMMY_LINE_PERIOD, 0x3A
+	.set  SET_GATE_TIME, 0x3B
+	// BORDER_WAVEFORM_CONTROL             , 0x3C
+	.set  SET_RAM_X_ADDRESS_START_END_POSITION, 0x44
+	.set  SET_RAM_Y_ADDRESS_START_END_POSITION, 0x45
+	.set  SET_RAM_X_ADDRESS_COUNTER, 0x4E
+	.set  SET_RAM_Y_ADDRESS_COUNTER, 0x4F
+	.set  TERMINATE_FRAME_READ_WRITE, 0xFF
 
 #ifdef SPI_BIT16 				/* if define SPI_BIT16 write and read 16bit */
 	.set bit_mask, 	0x8000
@@ -40,7 +67,7 @@
 
 	.set pMOSI, 7
 	.set pSCLK, 12
-	.set pCS, 10
+	.set pCS, 17
 	.set pMISO, 15
 	.set pDC, 4
 	.set pRST, 16
@@ -73,11 +100,31 @@ stackEnd:
 spi_mode:
 	.long	0
 
+reg_addr:
+	.long 0
+	.global counter				/* PROM read lenth counter */
+counter:
+	.long 0
+	.global prom_table
+prom_table:
+	.skip 32 					/* 128bit, 8 x 4(byte) */
+
+	.global addr_pointer 		/* read PROM data pointer */
+addr_pointer:
+	.long 0
+	.global temp
+temp:
+	.long 0
+
+	.global swap
+swap:      .long 0
+
 	/* Code goes into .text section */
 	.text
 
 .macro spi_delay
-	wait 10
+	//wait 10  // 8000000 cycles/second... this implies 800khz transfer?
+	 wait 8  // 8563304 
 .endm
 
 .macro read_MISO 
@@ -109,11 +156,22 @@ spi_mode:
 	.global entry
 entry:
 	move r3, stackEnd
+	//psr
+    //jump CS_Enable
+    //move r2, 1000 				/* wait 1000ms */
+    //psr
+    //jump waitMs
+    //psr 
+    //jump CS_Disable
+    //move r2, 1000
+    //psr
+    //jump waitMs
+    psr
+	jump init_param
 	psr
-	//; jump init_param
-	//; psr
-	//; jump MS5611_Init
-	//; psr
+	jump eink_Init
+	psr
+	halt
 	//; jump MS5611_Read_PROM
 	//; psr
 	//; jump MS5611_Convert_D1
@@ -121,6 +179,43 @@ entry:
 	//; jump MS5611_Convert_D2
 	jump wake_up
 	///* Get ULP back to sleep */
+
+	.global eink_Init
+eink_Init:
+	psr
+	jump SPI_Init 				/* init bitbang rtc gpio */
+	psr
+	jump CS_Enable 				/* enable cs bus */ //jump takes 4 cycles
+	move r2, CMD_RESET 			/* load CMD_RESET into reg to be written */ //move takes 6 cycles
+	psr
+	jump SPI_Write_Byte 		/* send the command */
+	psr
+	move r2, CMD_ADC_READ 		/* load CMD_ADC_READ into reg to be written */ //move takes 6 cycles
+	psr
+	jump SPI_Write_Byte 		/* send the command */
+	psr
+	jump CS_Disable 			/* disbale CS */
+	move r2, 3 					/* ms5611 will take 2.8 ms reload */
+	psr
+	jump waitMs
+	ret
+
+	.global init_param
+init_param:
+	clear addr_pointer
+	clear counter
+	clear reg_addr
+	ret
+
+        .global waitMs
+waitMs:
+	wait 8000
+	sub r2,r2,1 				/* Wait for r2 milliseconds */
+	jump doneWaitMs,eq
+	jump waitMs
+doneWaitMs:
+	ret
+
 	.global exit
 exit:
 	halt
