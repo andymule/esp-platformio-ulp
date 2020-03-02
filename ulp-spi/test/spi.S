@@ -72,4 +72,9 @@ add r2,r2,r1
 jump L.2, ov #}
 L.1:
 
+.bss
+    .global swap
+swap:
+    .space 4
+.text
 halt

@@ -98,6 +98,7 @@ stack:
 	.global stackEnd
 stackEnd:
 	.long 0
+
 	.global spi_mode
 spi_mode:
 	.long	0
@@ -121,12 +122,15 @@ temp:
 	.global swap
 swap:      .long 0
 
+.data
+readcnt: .long 0
+
 	/* Code goes into .text section */
 	.text
 
 .macro spi_delay // called before and after a send, so half it?
 	//wait 17  // 8000000 cycles/second... this implies 800khz transfer?
-	wait 10  // 8563304 
+	wait 0xFF  // 8563304 
 .endm
 
 .macro read_MISO 
@@ -157,74 +161,50 @@ swap:      .long 0
 
 	.global entry
 entry:
-	//move r3, stackEnd
-	
-    //move r2, 1000
-    //psr
-    //jump waitMs
-    
-	psr
-	jump init_param
-	psr
-	jump eink_Init
-	psr
-	halt
-	jump wake_up
-	///* Get ULP back to sleep */
+	clear addr_pointer
+	clear counter
+	clear reg_addr
 
-	.global eink_Init
-eink_Init:
-	psr
-	jump SPI_Init 				/* init bitbang rtc gpio */
-	psr
-	jump CS_Enable 				/* enable cs bus */ //jump takes 4 cycles
+	// init
+	set_CS 	
+	clear_MOSI
+	clear_SCLK
+	clear_CS 				/* enable cs bus */ //jump takes 4 cycles
 	
 	//debug
 	//move r2, CMD_RESET 			/* load CMD_RESET into reg to be written */ //move takes 6 cycles
 	//psr
 	//jump SPI_Write_Byte 		/* send the command */
 	
-	move r1, 0 // int index = 0
+	move r0, 0 // int index = 0
 loopInit:
     move r2, init_str   // r2 = init_str[0]
-	psr
-	jump SPI_Write_Byte 		/* send the command */
-	add r2, r2, r1
-	psr
-	jump SPI_Write_Byte 		/* send the command */
+	add r2, r2, r0
     ld r2, r2, 0      // r2 = init_str[index]
+	move r1, readcnt // save val of counter
+	st	r0, R1, 0
 	psr
 	jump SPI_Write_Byte 		/* send the command */
-    add r1, r1, 2     // this increments address by 2 words (8 bytes)
-	sub r2, r1, 30
-	jump doneLoopInit, eq
-	jump loopInit
-doneLoopInit:
-	//move r2, CMD_RESET 			/* load CMD_RESET into reg to be written */ //move takes 6 cycles
-	//psr
-	//jump SPI_Write_Byte 		/* send the command */
-	psr
-	//move r2, CMD_ADC_READ 		/* load CMD_ADC_READ into reg to be written */ //move takes 6 cycles
-	//psr
-	//jump SPI_Write_Byte 		/* send the command */
-	//psr
-	jump CS_Disable 			/* disbale CS */
-	move r2, 3 					/* ms5611 will take 2.8 ms reload */
+	move r1, readcnt // save val of counter
+    ld	r0, R1, 0
+	add r0, r0, 1     // this increments address by 2 words (8 bytes)
+	jumpr loopInit, 30, lt
+	set_CS 			/* disable CS */
+
+	move r2, 20
 	psr
 	jump waitMs
-	ret
+	halt
 
 	.global init_param
 init_param:
-	clear addr_pointer
-	clear counter
-	clear reg_addr
+	
 	ret
 
         .global waitMs
 waitMs:
-	wait 8000
-	sub r2,r2,1 				/* Wait for r2 milliseconds */
+	wait 0x2173 // = decimal 8563 // // 8563304 MHZ // used to be 8000
+	sub r2,r2, 0x01 				/* Wait for r2 milliseconds */
 	jump doneWaitMs,eq
 	jump waitMs
 doneWaitMs:
@@ -237,7 +217,7 @@ exit:
 wake_up:
 	/* Check if the SoC can be woken up */
 	READ_RTC_REG(RTC_CNTL_DIAG0_REG, 19, 1)
-	and r0, r0, 1
+	and r0, r0, 0x01
 	jump exit, eq
 	//jump wake_up, eq
 	/* Wake up the SoC and stop ULP program */
@@ -249,31 +229,9 @@ wake_up:
 	.global SPI_Init
 SPI_Init:
 	set_CS 						/* disable CS bus */
-	move r1, SPI_MODE_SET
-	sub r0, r1, SPI_MODE_1
-	jump gpio_init1, eq 		/* init spi mode 1 gpio */
-	sub r0, r1, SPI_MODE_2
-	jump gpio_init2, eq 		/* init spi mode 2 gpio */
-	sub r0, r1, SPI_MODE_3
-	jump gpio_init3, eq 		/* init spi mode 3 gpio */
-	sub r0, r1, SPI_MODE_4
-	jump gpio_init4, eq 		/* init spi mode 4 gpio */
-	jump error_loop 
 gpio_init1:
 	clear_MOSI
 	clear_SCLK
-	ret
-gpio_init2:
-	clear_MOSI
-	clear_SCLK
-	ret
-gpio_init3:
-	clear_MOSI
-	set_SCLK
-	ret
-gpio_init4:
-	clear_MOSI
-	set_SCLK
 	ret
 
 	.global CS_Disable 			/* CS high level signal disable */
@@ -288,24 +246,13 @@ CS_Enable:
 
 	.global	SPI_Write_Byte 		/* r2 save the data to be sent out */
 SPI_Write_Byte:
-	move r1, SPI_MODE_SET
-	sub r0, r1, SPI_MODE_1
-	jump write_mode_1, eq 		/* spi mode 1 */
-	sub r0, r1, SPI_MODE_2
-	jump write_mode_2, eq 		/* spi mode 2 */
-	sub r0, r1, SPI_MODE_3
-	jump write_mode_3, eq 		/* spi mode 3 */
-	sub r0, r1, SPI_MODE_4
-	jump write_mode_4, eq 		/* spi mode 4 */
-	jump error_loop 			/* should be never get here */
 write_mode_1:					/* Clock Polarity is 0 and Clock Phase is 0 */
 	stage_rst
-	clear_SCLK
 write_loop1:
 	clear_SCLK
 	and r0, r2, bit_mask
-	lsh r2, r2, 1
-	jumpr loop1_bit0, 1, lt
+	lsh r2, r2, 0x01
+	jumpr loop1_bit0, 0x01, lt
 	set_MOSI
 	jump loop1_bit1
 loop1_bit0:
@@ -314,70 +261,11 @@ loop1_bit1:
 	spi_delay
 	set_SCLK
 	spi_delay
-	stage_inc 1
+	stage_inc 0x01
 	jumps write_loop1, bit_len, lt
 	clear_SCLK
 	jump spi_write_byte_end
-write_mode_2:					/* Clock Polarity is 0 and Clock Phase is 1 */
-	clear_SCLK
-	stage_rst
-write_loop2:
-	set_SCLK
-	and r0, r2, bit_mask
-	lsh r2, r2, 1
-	jumpr loop2_bit0, 1, lt
-	set_MOSI
-	jump loop2_bit1
-loop2_bit0:
-	clear_MOSI
-loop2_bit1:
-	spi_delay
-	clear_SCLK
-	spi_delay
-	stage_inc 1
-	jumps write_loop2, bit_len, lt
-	clear_SCLK
-	jump spi_write_byte_end
-write_mode_3: 					/* Clock Polarity is 1 and Clock Phase is 0 */
-	set_SCLK
-	stage_rst
-write_loop3:
-	set_SCLK
-	and r0, r2, bit_mask
-	lsh r2, r2, 1
-	jumpr loop3_bit0, 1, lt
-	set_MOSI
-	jump loop3_bit1
-loop3_bit0:
-	clear_MOSI
-loop3_bit1:
-	spi_delay
-	clear_SCLK
-	spi_delay
-	stage_inc 1
-	jumps write_loop3, bit_len, lt
-	set_SCLK
-	jump spi_write_byte_end
-write_mode_4: 					/* Clock Polarity is 1 and Clock Phase is 1 */
-	set_SCLK
-	stage_rst
-write_loop4:
-	clear_SCLK
-	and r0, r2, bit_mask
-	lsh r2, r2, 1
-	jumpr loop4_bit0, 1, lt
-	set_MOSI
-	jump loop4_bit1
-loop4_bit0:
-	clear_MOSI
-loop4_bit1:
-	spi_delay
-	set_SCLK
-	spi_delay
-	stage_inc 1
-	jumps write_loop4, bit_len, lt
-	set_SCLK
-	jump spi_write_byte_end
+
 spi_write_byte_end:
 	clear_MOSI
 	ret
@@ -388,115 +276,34 @@ SPI_Burst_Write:
 	spi_delay
 	ret
 
-
-/* spi read function */
-	.global	SPI_Read_Byte
-SPI_Read_Byte:
-	move r1, SPI_MODE_SET
-	sub r0, r1, SPI_MODE_1
-	jump read_mode_1, eq 		/* spi mode 1 */
-	sub r0, r1, SPI_MODE_2
-	jump read_mode_2, eq 		/* spi mode 2 */
-	sub r0, r1, SPI_MODE_3
-	jump read_mode_3, eq 		/* spi mode 3 */
-	sub r0, r1, SPI_MODE_4
-	jump read_mode_4, eq 		/* spi mode 4 */
-	jump error_loop
-read_mode_1: 					/* Clock Polarity is 0 and Clock Phase is 0 */
-	clear_SCLK
-	stage_rst
-read_loop1:
-	clear_SCLK
-	spi_delay
-	set_SCLK
-	read_MISO
-	spi_delay
-	lsh r2, r2, 1
-	or r2, r2, r0
-	stage_inc 1
-	jumps read_loop1, bit_len, lt
-	clear_SCLK
-	jump spi_read_byte_end
-read_mode_2:					/* Clock Polarity is 0 and Clock Phase is 1 */
-	clear_SCLK
-	stage_rst
-read_loop2:
-	set_SCLK
-	spi_delay
-	clear_SCLK
-	read_MISO
-	spi_delay
-	lsh r2, r2, 1
-	or r2, r2, r0
-	stage_inc 1
-	jumps read_loop2, bit_len, lt
-	clear_SCLK
-	jump spi_read_byte_end
-read_mode_3: 					/* Clock Polarity is 1 and Clock Phase is 0 */
-	set_SCLK
-	stage_rst
-read_loop3:
-	set_SCLK
-	spi_delay
-	clear_SCLK
-	read_MISO
-	spi_delay
-	lsh r2, r2, 1
-	or r2, r2, r0
-	stage_inc 1
-	jumps read_loop3, bit_len, lt
-	set_SCLK
-	jump spi_read_byte_end
-read_mode_4: 					/* Clock Polarity is 1 and Clock Phase is 1 */
-	set_SCLK
-	stage_rst
-read_loop4:
-	clear_SCLK
-	spi_delay
-	set_SCLK
-	read_MISO
-	spi_delay
-	lsh r2, r2, 1
-	or r2, r2, r0
-	stage_inc 1
-	jumps read_loop4, bit_len, lt
-	set_SCLK
-	jump spi_read_byte_end
-spi_read_byte_end:
-	ret
-
-
-error_loop:
-	ret
-
 init_str: //30 char
-.word 0x2
-.word 0x2
-.word 0x1
-.word 0x11
-.word 0x12
-.word 0x12
-.word 0x22
-.word 0x22
-.word 0x66
-.word 0x69
-.word 0x69
-.word 0x59
-.word 0x58
-.word 0x99
-.word 0x99
-.word 0x88
-.word 0x0
-.word 0x0
-.word 0x0
-.word 0x0
-.word 0xf8
-.word 0xb4
-.word 0x13
-.word 0x51
-.word 0x35
-.word 0x51
-.word 0x51
-.word 0x19
-.word 0x1
-.word 0x0
+.long 0x2
+.long 0x2
+.long 0x1
+.long 0x11
+.long 0x12
+.long 0x12
+.long 0x22
+.long 0x22
+.long 0x66
+.long 0x69
+.long 0x69
+.long 0x59
+.long 0x58
+.long 0x99
+.long 0x99
+.long 0x88
+.long 0x0
+.long 0x0
+.long 0x0
+.long 0x0
+.long 0xf8
+.long 0xb4
+.long 0x13
+.long 0x51
+.long 0x35
+.long 0x51
+.long 0x51
+.long 0x19
+.long 0x1
+.long 0x0

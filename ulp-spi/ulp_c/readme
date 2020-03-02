@@ -1,2 +1,5 @@
 compiles from c to esp32 ulp assembly using this tool
 https://github.com/jasonful/lcc
+
+command:
+ulpcc ulp_c\spi_asm.c -o ulp\spi.s

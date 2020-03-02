@@ -123,7 +123,6 @@
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/wpa_supplicant/include",
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/wpa_supplicant/port/include",
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/xtensa-debug-module/include",
-                "c:/Source/esp-platformio-ulp/ulp-spi/.pio/build/esp32 dev/ulp_app",
                 "C:/Users/xxsha/.platformio/packages/tool-unity",
                 ""
             ],
@@ -247,7 +246,6 @@
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/wpa_supplicant/include",
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/wpa_supplicant/port/include",
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/xtensa-debug-module/include",
-                    "c:/Source/esp-platformio-ulp/ulp-spi/.pio/build/esp32 dev/ulp_app",
                     "C:/Users/xxsha/.platformio/packages/tool-unity",
                     ""
                 ]
@@ -258,9 +256,10 @@
                 "IDF_VER=\"3.30300.190916\"",
                 "PLATFORMIO=40201",
                 "ARDUINO_LOLIN32",
+                "CORE_DEBUG_LEVEL=5",
                 "ESP32",
                 "ESP_PLATFORM",
-                "F_CPU=240000000L",
+                "F_CPU=80000000L",
                 "HAVE_CONFIG_H",
                 "MBEDTLS_CONFIG_FILE=\"mbedtls/esp_config.h\"",
                 "GCC_NOT_5_2_0=0",

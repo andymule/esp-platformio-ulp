@@ -148,7 +148,7 @@ void app_main()
     /* Set ULP wake up period to 2s */
     int toSec = 1000 * 1000;
     esp_sleep_enable_timer_wakeup(3 * toSec);
-    ulp_set_wakeup_period(0, 2 * toSec); //how often to wake ULP? always!
+    ulp_set_wakeup_period(0, 2 * toSec); //how often to wake ULP
     ESP_ERROR_CHECK(ulp_run((&ulp_entry - RTC_SLOW_MEM) / sizeof(uint32_t)));
     ESP_ERROR_CHECK(esp_sleep_enable_ulp_wakeup());
     esp_deep_sleep_start();
