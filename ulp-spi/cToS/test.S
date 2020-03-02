@@ -1,4 +1,7 @@
 .data
+    .global init_str_len
+init_str_len:
+.long 0x1e
     .global init_str
 init_str:
 .long 0x2
@@ -43,21 +46,17 @@ entry.j:
 .text
 entry:
 move r2,0
-move r3,entry.j
-st r2,r3,0
-move r2,0
 move r3,entry.i
 st r2,r3,0
 jump L.5
 L.2:
 move r2,entry.i
 ld r2,r2,0
-move r1,faker
-add r1,r2,r1
-move r0,init_str
-add r2,r2,r0
+move r1,init_str
+add r2,r2,r1
 ld r2,r2,0
-st r2,r1,0
+move r3,entry.j
+st r2,r3,0
 L.3:
 move r2,entry.i
 ld r2,r2,0
@@ -73,9 +72,4 @@ add r2,r2,r1
 jump L.2, ov #}
 L.1:
 
-.bss
-    .global faker
-faker:
-    .space 120
-.text
 halt

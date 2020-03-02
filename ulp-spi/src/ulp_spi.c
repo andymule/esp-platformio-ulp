@@ -63,18 +63,24 @@ const gpio_num_t GPIO_BUSY = GPIO_NUM_15;
 //exposed GPIO w RTC:
 // 0->11 // DONT USE used to boot into flash mode
 // 2->12   x
-// 4->10   x // had trouble here too, idk
+// 4->10     // had trouble here too, idk
 // 12->15  x
 // 13->4
 // 14->16
 // 15->13
 // 26->7   x
-// 27->17     //last used
+// 27->17  x  //last used
 // 32->9
 // 33->8
 // 34->4
+//pins 34-39 can be used as input only while all the other pins can be used as input or output
+//esp32 manual: 32-33 output only?
 
-static void init_ulp_program()
+// The ULP co-processor puts itself into sleep mode by executing the HALT instruction. This also triggers the ULPtimer to start counting RTC_SLOW_CLK ticks which, by default, originate from an internal 150 kHz RC oscillator.Once the timer expires, the ULP co-processor is powered up and runs a program with the program counter (PC)which is stored in register SENS_PC_INIT. The relationship between the described signals and registers is shownin Figure156.
+
+//Once the timer counts the number of ticks set in the selected SENS_ULP_CP_SLEEP_CYCx_REG register, the ULP coprocessor will power up and start running the program from the entry point set in the call to ulp_run.
+
+static void setup_ulp_pins()
 {
     esp_err_t err = ulp_load_binary(0, ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start) / sizeof(uint32_t));
     ESP_ERROR_CHECK(err);
@@ -89,16 +95,22 @@ static void init_ulp_program()
     rtcin(GPIO_MISO) // unused? should tie high or low?
     rtcin(GPIO_BUSY)
 
-    // gpio_pad_select_gpio(GPIO_CS);
-    // gpio_set_direction(GPIO_CS, GPIO_MODE_OUTPUT);
-    // gpio_set_level(GPIO_CS, 0);
-    // vTaskDelay(1000 / portTICK_PERIOD_MS);
-    // printf("Turning on the LED\n");
-    // gpio_set_level(GPIO_CS, 1);
-    // vTaskDelay(1000 / portTICK_PERIOD_MS);
+     /* Disconnect GPIO12 and GPIO15 to remove current drain through
+     * pullup/pulldown resistors.
+     * GPIO12 may be pulled high to select flash voltage.
+     */
+    // rtc_gpio_isolate(GPIO_NUM_12);
 
-    /* Set ULP wake up period to 2s */
-    ulp_set_wakeup_period(0, 2 * 1000 * 1000);
+    //gpio_set_direction(GPIO_CS, GPIO_MODE_OUTPUT);
+    // while (true)
+    // {
+    //     printf("down\n");
+    //     gpio_set_level(GPIO_CS, 0);
+    //     vTaskDelay(1000 / portTICK_PERIOD_MS);
+    //     printf("up\n");
+    //     gpio_set_level(GPIO_CS, 1);
+    //     vTaskDelay(1000 / portTICK_PERIOD_MS);
+    // }
 }
 
 // RTC_DATA_ATTR int wake_count;
@@ -120,7 +132,8 @@ void app_main()
     {
         printf("Deep sleep wakeup\n");
     }
-    init_ulp_program();
+    setup_ulp_pins();
+    
     // uint32_t rtc_8md256_period = rtc_clk_cal(RTC_CAL_8MD256, 100);
     // uint32_t rtc_fast_freq_hz = 1000000ULL * (1 << RTC_CLK_CAL_FRACT) * 256 / rtc_8md256_period;
     // printf("rtc_8md256_period: %d \n", rtc_8md256_period);
@@ -132,6 +145,10 @@ void app_main()
     // (unsigned char*)(&ulp_cmd_full_update) = "asd";
     ulp_swap = 128;
     printf("Last measurement value: %d\n", ulp_swap & UINT16_MAX);
+    /* Set ULP wake up period to 2s */
+    int toSec = 1000 * 1000;
+    esp_sleep_enable_timer_wakeup(3 * toSec);
+    ulp_set_wakeup_period(0, 2 * toSec); //how often to wake ULP? always!
     ESP_ERROR_CHECK(ulp_run((&ulp_entry - RTC_SLOW_MEM) / sizeof(uint32_t)));
     ESP_ERROR_CHECK(esp_sleep_enable_ulp_wakeup());
     esp_deep_sleep_start();

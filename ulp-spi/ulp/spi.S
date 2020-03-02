@@ -73,6 +73,8 @@
 	.set pRST, 16
 	.set pBUSY, 13
 
+	
+
 /*
 ; // for to test w bus pirate				   	//exposed GPIO w RTC:
 ; const gpio_num_t GPIO_MOSI = GPIO_NUM_0; 	// 0->11
@@ -122,9 +124,9 @@ swap:      .long 0
 	/* Code goes into .text section */
 	.text
 
-.macro spi_delay
-	//wait 10  // 8000000 cycles/second... this implies 800khz transfer?
-	 wait 8  // 8563304 
+.macro spi_delay // called before and after a send, so half it?
+	//wait 17  // 8000000 cycles/second... this implies 800khz transfer?
+	wait 10  // 8563304 
 .endm
 
 .macro read_MISO 
@@ -155,28 +157,18 @@ swap:      .long 0
 
 	.global entry
 entry:
-	move r3, stackEnd
-	//psr
-    //jump CS_Enable
-    //move r2, 1000 				/* wait 1000ms */
-    //psr
-    //jump waitMs
-    //psr 
-    //jump CS_Disable
+	//move r3, stackEnd
+	
     //move r2, 1000
     //psr
     //jump waitMs
-    psr
+    
+	psr
 	jump init_param
 	psr
 	jump eink_Init
 	psr
 	halt
-	//; jump MS5611_Read_PROM
-	//; psr
-	//; jump MS5611_Convert_D1
-	//; psr
-	//; jump MS5611_Convert_D2
 	jump wake_up
 	///* Get ULP back to sleep */
 
@@ -186,14 +178,36 @@ eink_Init:
 	jump SPI_Init 				/* init bitbang rtc gpio */
 	psr
 	jump CS_Enable 				/* enable cs bus */ //jump takes 4 cycles
-	move r2, CMD_RESET 			/* load CMD_RESET into reg to be written */ //move takes 6 cycles
+	
+	//debug
+	//move r2, CMD_RESET 			/* load CMD_RESET into reg to be written */ //move takes 6 cycles
+	//psr
+	//jump SPI_Write_Byte 		/* send the command */
+	
+	move r1, 0 // int index = 0
+loopInit:
+    move r2, init_str   // r2 = init_str[0]
 	psr
 	jump SPI_Write_Byte 		/* send the command */
-	psr
-	move r2, CMD_ADC_READ 		/* load CMD_ADC_READ into reg to be written */ //move takes 6 cycles
+	add r2, r2, r1
 	psr
 	jump SPI_Write_Byte 		/* send the command */
+    ld r2, r2, 0      // r2 = init_str[index]
 	psr
+	jump SPI_Write_Byte 		/* send the command */
+    add r1, r1, 2     // this increments address by 2 words (8 bytes)
+	sub r2, r1, 30
+	jump doneLoopInit, eq
+	jump loopInit
+doneLoopInit:
+	//move r2, CMD_RESET 			/* load CMD_RESET into reg to be written */ //move takes 6 cycles
+	//psr
+	//jump SPI_Write_Byte 		/* send the command */
+	psr
+	//move r2, CMD_ADC_READ 		/* load CMD_ADC_READ into reg to be written */ //move takes 6 cycles
+	//psr
+	//jump SPI_Write_Byte 		/* send the command */
+	//psr
 	jump CS_Disable 			/* disbale CS */
 	move r2, 3 					/* ms5611 will take 2.8 ms reload */
 	psr
@@ -454,3 +468,35 @@ spi_read_byte_end:
 
 error_loop:
 	ret
+
+init_str: //30 char
+.word 0x2
+.word 0x2
+.word 0x1
+.word 0x11
+.word 0x12
+.word 0x12
+.word 0x22
+.word 0x22
+.word 0x66
+.word 0x69
+.word 0x69
+.word 0x59
+.word 0x58
+.word 0x99
+.word 0x99
+.word 0x88
+.word 0x0
+.word 0x0
+.word 0x0
+.word 0x0
+.word 0xf8
+.word 0xb4
+.word 0x13
+.word 0x51
+.word 0x35
+.word 0x51
+.word 0x51
+.word 0x19
+.word 0x1
+.word 0x0
