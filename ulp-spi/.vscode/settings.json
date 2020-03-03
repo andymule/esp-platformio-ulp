@@ -3,6 +3,9 @@
         "rtc_io.h": "c",
         "gpio.h": "c",
         "ulp.h": "c",
-        "freertos.h": "c"
+        "freertos.h": "c",
+        "*.ipp": "c",
+        "condition_variable": "c",
+        "future": "c"
     }
 }

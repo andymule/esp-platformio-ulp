@@ -123,6 +123,7 @@
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/wpa_supplicant/include",
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/wpa_supplicant/port/include",
                 "C:/Users/xxsha/.platformio/packages/framework-espidf/components/xtensa-debug-module/include",
+                "c:/Source/esp-platformio-ulp/ulp-spi/.pio/build/latest_stable/ulp_app",
                 "C:/Users/xxsha/.platformio/packages/tool-unity",
                 ""
             ],
@@ -246,6 +247,7 @@
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/wpa_supplicant/include",
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/wpa_supplicant/port/include",
                     "C:/Users/xxsha/.platformio/packages/framework-espidf/components/xtensa-debug-module/include",
+                    "c:/Source/esp-platformio-ulp/ulp-spi/.pio/build/latest_stable/ulp_app",
                     "C:/Users/xxsha/.platformio/packages/tool-unity",
                     ""
                 ]

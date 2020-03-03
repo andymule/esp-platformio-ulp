@@ -181,14 +181,14 @@ loopInit:
     move r2, init_str   // r2 = init_str[0]
 	add r2, r2, r0
     ld r2, r2, 0      // r2 = init_str[index]
-	move r1, readcnt // save val of counter
-	st	r0, R1, 0
+	move r1, readcnt 
+	st	r0, R1, 0// save val of counter
 	psr
 	jump SPI_Write_Byte 		/* send the command */
-	move r1, readcnt // save val of counter
-    ld	r0, R1, 0
-	add r0, r0, 1     // this increments address by 2 words (8 bytes)
-	jumpr loopInit, 30, lt
+	move r1, readcnt 
+    ld	r0, R1, 0// restore val of counter
+	add r0, r0, 1     
+	jumpr loopInit, 30, lt // loop while less than 30
 	set_CS 			/* disable CS */
 
 	move r2, 20

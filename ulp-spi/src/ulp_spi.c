@@ -35,7 +35,7 @@ extern const uint8_t ulp_main_bin_end[] asm("_binary_ulp_main_bin_end");
     rtc_gpio_set_direction(x, RTC_GPIO_MODE_INPUT_ONLY); \
     rtc_gpio_pullup_en(x);
 
-// // for lilygo T5 v2.2
+// // for lilygo T5 v2.2 (NOT ALL RTC capable pins)
 // const gpio_num_t GPIO_MOSI = GPIO_NUM_23;   // nortc
 // const gpio_num_t GPIO_SCLK = GPIO_NUM_18;   // nortc
 // const gpio_num_t GPIO_CS = GPIO_NUM_5;      // nortc
@@ -53,12 +53,6 @@ const gpio_num_t GPIO_MISO = GPIO_NUM_12;
 const gpio_num_t GPIO_DC = GPIO_NUM_13;
 const gpio_num_t GPIO_RST = GPIO_NUM_14;
 const gpio_num_t GPIO_BUSY = GPIO_NUM_15;
-
-// as defined in original example
-// const gpio_num_t GPIO_CS = GPIO_NUM_25;
-// const gpio_num_t GPIO_MOSI = GPIO_NUM_26;
-// const gpio_num_t GPIO_SCLK = GPIO_NUM_27;
-// const gpio_num_t GPIO_MISO = GPIO_NUM_4;
 
 //exposed GPIO w RTC:
 // 0->11 // DONT USE used to boot into flash mode
@@ -90,7 +84,6 @@ static void setup_ulp_pins()
     rtcout(GPIO_CS) // low to select/enable
     rtcouthi(GPIO_RST)  // low to reset
     rtcout(GPIO_DC)     // hi data, lo command (only 4 pin spi) // unused since BS1 high?
-    // rtcout(GPIO_DC)// BSI // select SPI: Low if 4pin, HI is 3 pin
     // BS1 TIED HIGH according to schematic
     rtcin(GPIO_MISO) // unused? should tie high or low?
     rtcin(GPIO_BUSY)
@@ -100,56 +93,34 @@ static void setup_ulp_pins()
      * GPIO12 may be pulled high to select flash voltage.
      */
     // rtc_gpio_isolate(GPIO_NUM_12);
-
-    //gpio_set_direction(GPIO_CS, GPIO_MODE_OUTPUT);
-    // while (true)
-    // {
-    //     printf("down\n");
-    //     gpio_set_level(GPIO_CS, 0);
-    //     vTaskDelay(1000 / portTICK_PERIOD_MS);
-    //     printf("up\n");
-    //     gpio_set_level(GPIO_CS, 1);
-    //     vTaskDelay(1000 / portTICK_PERIOD_MS);
-    // }
 }
-
-// RTC_DATA_ATTR int wake_count;
-// void RTC_IRAM_ATTR  esp_wake_deep_sleep()
-// {
-//     esp_default_wake_deep_sleep();
-//     static RTC_RODATA_ATTR const char fmt_str[] = "Wake count %d\n";
-//     ets_printf(fmt_str, wake_count++);
-// }
 
 void app_main()
 {
     esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
-    if (cause != ESP_SLEEP_WAKEUP_ULP)
-    {
-        printf("Not ULP wakeup, initializing ULP\n");
-    }
-    else
-    {
-        printf("Deep sleep wakeup\n");
-    }
     setup_ulp_pins();
-    
-    // uint32_t rtc_8md256_period = rtc_clk_cal(RTC_CAL_8MD256, 100);
-    // uint32_t rtc_fast_freq_hz = 1000000ULL * (1 << RTC_CLK_CAL_FRACT) * 256 / rtc_8md256_period;
-    // printf("rtc_8md256_period: %d \n", rtc_8md256_period);
-    // printf("rtc_fast_freq_hz: %d \n", rtc_fast_freq_hz); // 8563304 pass to RTC as true speed?
+
     printf("Entering deep sleep\n\n");
     esp_deep_sleep_disable_rom_logging(); // suppress boot messages
-    /* Start the ULP program */
-    // memcpy((void*)(&ulp_cmd_full_update), "abcdefghijklmnopqrstuvwxyz", 26);
-    // (unsigned char*)(&ulp_cmd_full_update) = "asd";
-    ulp_swap = 128;
-    printf("Last measurement value: %d\n", ulp_swap & UINT16_MAX);
+
+    uint32_t* swap = &ulp_swap;
+    for (int i=0; i<30; i++)
+    {
+        swap[i] = i; // shared memory with ULP
+    }
     /* Set ULP wake up period to 2s */
     int toSec = 1000 * 1000;
-    esp_sleep_enable_timer_wakeup(3 * toSec);
+    esp_sleep_enable_timer_wakeup(30 * toSec);
     ulp_set_wakeup_period(0, 2 * toSec); //how often to wake ULP
     ESP_ERROR_CHECK(ulp_run((&ulp_entry - RTC_SLOW_MEM) / sizeof(uint32_t)));
     ESP_ERROR_CHECK(esp_sleep_enable_ulp_wakeup());
     esp_deep_sleep_start();
+}
+
+void get_real_speed()
+{
+    uint32_t rtc_8md256_period = rtc_clk_cal(RTC_CAL_8MD256, 100);
+    uint32_t rtc_fast_freq_hz = 1000000ULL * (1 << RTC_CLK_CAL_FRACT) * 256 / rtc_8md256_period;
+    printf("rtc_8md256_period: %d \n", rtc_8md256_period);
+    printf("rtc_fast_freq_hz: %d \n", rtc_fast_freq_hz); // 8563304 pass to RTC as true speed?
 }
