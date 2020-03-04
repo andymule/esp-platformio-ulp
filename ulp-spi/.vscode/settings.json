@@ -6,6 +6,7 @@
         "freertos.h": "c",
         "*.ipp": "c",
         "condition_variable": "c",
-        "future": "c"
+        "future": "c",
+        "ulp_main.h": "c"
     }
 }

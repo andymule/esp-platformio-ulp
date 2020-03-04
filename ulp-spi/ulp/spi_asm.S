@@ -81,7 +81,7 @@ entry.mydatabyte:
     .space 4
 .text
 .bss
-entry.bitsToSend:
+entry.bitsSent:
     .space 4
 .text
 .bss
@@ -100,10 +100,9 @@ wait 0xffff
 reg_wr 258,30,30,1
 wait 0xffff
 L.2:
-reg_wr 258,31,31,1
 reg_wr 258,21,21,1
 reg_wr 258,26,26,1
-reg_wr 257,31,31,1
+reg_wr 258,31,31,1
 move r2,0
 move r3,entry.loopcnt
 st r2,r3,0
@@ -121,7 +120,7 @@ ld r2,r2,0
 move r3,entry.mydatabyte
 st r2,r3,0
 move r2,8
-move r3,entry.bitsToSend
+move r3,entry.bitsSent
 st r2,r3,0
 move r2,entry.loopcnt
 ld r2,r2,0
@@ -131,10 +130,10 @@ st r2,r3,0
 jump L.7
 L.6:
 move r2,1
-move r1,entry.bitsToSend
+move r1,entry.bitsSent
 ld r1,r1,0
-sub r1,r1,1
-move r3,entry.bitsToSend
+add r1,r1,1
+move r3,entry.bitsSent
 st r1,r3,0
 move r1,entry.mydatabyte
 ld r1,r1,0
@@ -160,12 +159,12 @@ wait 255
 reg_wr 257,26,26,1
 wait 255
 L.7:
-move r2,entry.bitsToSend
+move r2,entry.bitsSent
 ld r2,r2,0
-move r2,r2 #{ if r2 goto L.6 
-jump 1f, eq
-jump L.6
-1:           #}
+move r1,8
+sub r2,r2,r1 #{ if r2 < r1 goto L.6
+add r2,r2,r1
+jump L.6, ov #}
 L.4:
 move r2,entry.loopcnt
 ld r2,r2,0
@@ -175,7 +174,12 @@ sub r2,r2,r1 #{ if r2 < r1 goto L.3
 add r2,r2,r1
 jump L.3, ov #}
 reg_wr 258,21,21,1
+reg_wr 257,31,31,1
 L.1:
+
+    .global end_program
+end_program:
+L.11:
 
 .bss
     .global swap

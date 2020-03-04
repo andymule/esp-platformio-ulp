@@ -19,8 +19,8 @@
 #define set_SCLK WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG, RTC_GPIO_OUT_DATA_W1TS_S + pSCLK, 1, 1)
 #define clear_MOSI WRITE_RTC_REG(RTC_GPIO_OUT_W1TC_REG, RTC_GPIO_OUT_DATA_W1TC_S + pMOSI, 1, 1)
 #define set_MOSI WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG, RTC_GPIO_OUT_DATA_W1TS_S + pMOSI, 1, 1)
-#define disable_CS WRITE_RTC_REG(RTC_GPIO_OUT_W1TC_REG, RTC_GPIO_OUT_DATA_W1TC_S + pCS, 1, 1)
-#define enable_CS WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG, RTC_GPIO_OUT_DATA_W1TS_S + pCS, 1, 1)
+#define enable_CS WRITE_RTC_REG(RTC_GPIO_OUT_W1TC_REG, RTC_GPIO_OUT_DATA_W1TC_S + pCS, 1, 1)
+#define disable_CS WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG, RTC_GPIO_OUT_DATA_W1TS_S + pCS, 1, 1)
 
 unsigned swap[30];
 const unsigned int init_str_len = 30;
@@ -39,10 +39,8 @@ void entry()
     wait(65535);
 
 SPI_Send:
-    disable_CS; /* disable CS bus */
     clear_MOSI;
     clear_SCLK;
-
     enable_CS;
 
     loopcnt = 0;
@@ -52,11 +50,11 @@ SPI_Send:
         // unsigned mydatabyte = init_str[loopcnt];
         unsigned mydatabyte = swap[loopcnt];
         unsigned thisbit;
-        unsigned bitsToSend = 8;
+        unsigned bitsSent = 8;
         loopcnt += 1;
-        while (bitsToSend > 0)
+        while (bitsSent < 8)
         {
-            bitsToSend -= 1;
+            bitsSent += 1;
             thisbit = mydatabyte & bit_mask;
             mydatabyte = mydatabyte << 1;
             if (thisbit < 1)
@@ -75,5 +73,10 @@ SPI_Send:
     }
 
     clear_MOSI;
+    disable_CS;
     halt;
+}
+
+void end_program() // gives us pointer to end of ULP for knowing size of program
+{
 }
