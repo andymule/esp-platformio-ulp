@@ -2,7 +2,7 @@
 
 #define bit_mask 0x80
 #define bit_len 0x08
-#define clockWaitSPIHZ 255 // cycles between SPI clocks
+#define clockWaitSPIHZ 255 // cycles between SPI clocks, 255 gives us 8500000hz/255 = 33000hz SPI
 
 #define pMOSI 7
 #define pSCLK 12
@@ -22,7 +22,7 @@
 #define enable_CS WRITE_RTC_REG(RTC_GPIO_OUT_W1TC_REG, RTC_GPIO_OUT_DATA_W1TC_S + pCS, 1, 1)
 #define disable_CS WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG, RTC_GPIO_OUT_DATA_W1TS_S + pCS, 1, 1)
 
-unsigned swap[30];
+unsigned swap[30]; // filled with data from main CPU before running this in ULP
 const unsigned int init_str_len = 30;
 const unsigned init_str[30] = {0x02, 0x02, 0x01, 0x11, 0x12, 0x12, 0x22, 0x22, 0x66, 0x69, 0x69, 0x59, 0x58, 0x99, 0x99, 0x88, 0x00, 0x00, 0x00, 0x00, 0xF8, 0xB4, 0x13, 0x51, 0x35, 0x51, 0x51, 0x19, 0x01, 0x00};
 const unsigned init_partial_str[30] = {0x10,0x18,0x18,0x08,0x18,0x18,0x08,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x13,0x14,0x44,0x12,0x00,0x00,0x00,0x00,0x00,0x00};
@@ -34,9 +34,9 @@ void entry()
     unsigned datasize = 0;
 
     enable_RST;
-    wait(65535); // 1/129 seconds?
+    wait(65535); 
     disable_RST;
-    wait(65535);
+    wait(65535); 
 
 SPI_Send:
     clear_MOSI;
@@ -77,6 +77,4 @@ SPI_Send:
     halt;
 }
 
-void end_program() // gives us pointer to end of ULP for knowing size of program
-{
-}
+void end_program(){} // gives us pointer to end of ULP for knowing size of program
